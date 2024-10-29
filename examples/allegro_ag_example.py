@@ -29,6 +29,11 @@ from hippynn.databases import AseDatabase
 torch.set_default_dtype(torch.float32)
 hippynn.settings.WARN_LOW_DISTANCES = False
 
+data_src = '../../datasets/Ag_warm_nospin.xyz'
+data_src = os.path.abspath(data_src)
+if not os.path.exists(data_src):
+    raise FileNotFoundError(f"Required data file not found. Please see instructions in script header on how to obtain the needed data. Data should be placed at {data_src}.")
+
 max_epochs = 500
 
 network_params = {
@@ -47,7 +52,6 @@ network_params = {
 early_stopping_key = "Loss-Err"
 test_size = 0.1
 valid_size = 0.1
-dbname = '../../datasets/Ag_warm_nospin.xyz'
 training_path = os.path.abspath('.') + '/'
 
 def setup_network(network_params):
@@ -171,7 +175,7 @@ if __name__=="__main__":
     print(db_info)
     print("Preparing dataset.")
     database = AseDatabase(directory=training_path,
-        name=dbname,
+        name=data_src,
         seed=1001,  # Random seed for splitting data
         quiet=False,
         pin_memory=False,
@@ -191,7 +195,7 @@ if __name__=="__main__":
     
     ## Possible to export lammps MLIPInterface for model if Lammps with MLIP Installed!
     # print("Exporting lammps interface")
-    # first_frame = ase.io.read(dbname) # Reads in first frame only for saving box
+    # first_frame = ase.io.read(data_src) # Reads in first frame only for saving box
     # ase.io.write('ag_box.data', first_frame, format='lammps-data')
     # from hippynn.interfaces.lammps_interface import MLIAPInterface
     # unified = MLIAPInterface(henergy, ["Ag"], model_device=torch.cuda.current_device())
