@@ -104,13 +104,32 @@ with hippynn.tools.active_directory(netname):
 
         from hippynn import plotting
 
-        plot_maker = plotting.PlotMaker(
+        plotters = [
             plotting.Hist2D.compare(sys_energy, saved=True),
             plotting.Hist2D.compare(en_peratom, saved=True),
             plotting.Hist2D.compare(force,saved=True),
             plotting.SensitivityPlot(network.torch_module.sensitivity_layers[0], saved="sense_0.pdf"),
-            plot_every=plot_every,
-        )
+        ]
+
+        ## More advanced graph and plotter usage to display forces separately for each species
+        from hippynn.graphs.nodes.indexers import SpeciesIndexed
+        force_pred_by_species = SpeciesIndexed("ForceBySpeciesPredicted", parents=(force.pred,))
+        force_true_by_species = SpeciesIndexed("ForceBySpeciesTrue", parents=(force.true,))
+
+        for true_idxed, pred_idxed in zip(force_true_by_species.children, force_pred_by_species.children):
+            species_num = true_idxed.name.split("_")[-1] # Parse the node name to find the species value
+            plotters.append(
+                plotting.Hist2D(
+                    x_var=true_idxed, 
+                    y_var=pred_idxed, 
+                    xlabel=f"true Forces, species {species_num}", 
+                    ylabel=f"predicted Forces, species {species_num}", 
+                    saved=f"Hist2D-ForceBySpecies{species_num}.pdf",
+                )
+            )
+        ## end
+
+        plot_maker = plotting.PlotMaker(*plotters, plot_every=plot_every)
 
         from hippynn.experiment.assembly import assemble_for_training
 
@@ -147,7 +166,7 @@ with hippynn.tools.active_directory(netname):
             if v.dtype not in [np.float64,np.float32,np.int64]:
                 del arrays[k]
 
-        database.make_trainvalidtest_split(test_size=0.2, valid_size=0.4)
+        database.make_trainvalidtest_split(test_size=test_size, valid_size=valid_size)
         ### End pre-processing
 
         # Now that we have a database and a model, we can
